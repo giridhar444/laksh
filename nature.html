@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>NatureView — Gallery & Live Streams</title>
+<meta name="description" content="Beautiful nature gallery with live-stream support. Click to open fullscreen slideshow or paste a webcam URL to view live streams.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#071724; --card:#072633; --muted:#a8c0cc; --accent:#48c9b0;
+    --glass: rgba(255,255,255,0.03);
+    --gap:14px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Arial;
+    background: linear-gradient(180deg,#02111b,#06202b 60%);
+    color:#e6f1f3; -webkit-font-smoothing:antialiased;
+    padding:28px;
+  }
+  .wrap{max-width:1200px;margin:0 auto;}
+  header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+  .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#1fb7ff);display:flex;align-items:center;justify-content:center;font-weight:800;color:#003;box-shadow:0 10px 30px rgba(0,0,0,0.5)}
+  h1{margin:0;font-size:20px}
+  p.sub{margin:0;color:var(--muted);font-size:13px}
+
+  /* Tabs */
+  .tabs{margin-top:16px;display:flex;gap:8px;align-items:center}
+  .tab{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);padding:8px 12px;border-radius:10px;cursor:pointer}
+  .tab.active{background:linear-gradient(90deg,var(--accent),#7dd3fc33);color:#002;font-weight:700;border:0;box-shadow:0 10px 30px rgba(72,201,176,0.08)}
+  .actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .btn{background:var(--card);border-radius:10px;padding:8px 12px;color:var(--muted);border:1px solid rgba(255,255,255,0.03);cursor:pointer}
+  .btn.primary{background:linear-gradient(90deg,var(--accent),#7dd3fc33);color:#012;font-weight:600;border:0}
+
+  /* Grid (masonry) */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--gap);margin-top:18px}
+  .card{background:var(--card);border-radius:12px;overflow:hidden;position:relative;border:1px solid rgba(255,255,255,0.03);cursor:pointer;display:flex;flex-direction:column}
+  .card .img{height:160px;display:block;overflow:hidden}
+  .card img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1);transition:transform .45s ease}
+  .card:hover img{transform:scale(1.06)}
+  .meta{padding:12px;padding-top:10px}
+  .meta .title{font-weight:700}
+  .meta .desc{color:var(--muted);font-size:13px;margin-top:6px}
+
+  /* Lightbox */
+  .lightbox{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(1,8,12,0.75);z-index:120}
+  .lightbox.open{display:flex}
+  .lightbox .stage{max-width:1100px;width:96%;background:linear-gradient(180deg,#02162a,#041f28);border-radius:12px;padding:14px;display:grid;grid-template-columns:1fr 300px;gap:12px;align-items:start}
+  .stage .photo{height:66vh;border-radius:8px;overflow:hidden}
+  .stage img{width:100%;height:100%;object-fit:contain;display:block;background:#000}
+  .info{color:var(--muted);padding:10px}
+  .close{position:absolute;right:20px;top:16px;background:transparent;border:0;color:var(--muted);font-size:20px;cursor:pointer}
+
+  /* Controls */
+  .controls{display:flex;gap:8px;align-items:center;margin-top:12px}
+  .small{font-size:13px;padding:8px 10px}
+
+  /* Live area */
+  .live{margin-top:18px;display:none}
+  .live.open{display:block}
+  .live-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+  .live-box{background:var(--card);border-radius:12px;padding:8px;border:1px solid rgba(255,255,255,0.03)}
+  iframe{width:100%;height:260px;border-radius:8px;border:0;background:#000}
+
+  footer{margin-top:24px;color:var(--muted);font-size:13px;text-align:center}
+
+  @media (max-width:900px){
+    .stage{grid-template-columns:1fr; padding:12px}
+    .stage .photo{height:50vh}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">NV</div>
+      <div>
+        <h1>NatureView</h1>
+        <p class="sub">A beautiful nature photo gallery — click for fullscreen slideshow. Switch to Live Mode to view webcams.</p>
+      </div>
+    </header>
+
+    <div class="tabs" role="tablist" aria-label="View mode">
+      <button class="tab active" id="tabGallery" role="tab" aria-selected="true">Gallery</button>
+      <button class="tab" id="tabLive" role="tab" aria-selected="false">Live Mode</button>
+
+      <div class="actions">
+        <button class="btn" id="shuffle">Shuffle</button>
+        <button class="btn primary" id="slideshow">Start Slideshow</button>
+      </div>
+    </div>
+
+    <!-- GALLERY -->
+    <main id="galleryArea" class="gallery">
+      <div class="grid" id="grid"></div>
+    </main>
+
+    <!-- LIVE -->
+    <section id="liveArea" class="live" aria-hidden="true">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+        <input id="liveUrl" placeholder="Paste a live stream/webcam iframe URL (YouTube embed / webcam url)" style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit" />
+        <button class="btn primary" id="addLive">Add Live Stream</button>
+      </div>
+
+      <div class="live-grid" id="liveGrid">
+        <!-- sample placeholder streams (you can replace or remove) -->
+        <div class="live-box"><div style="font-weight:700;margin-bottom:8px">Sample Nature Stream</div>
+          <!-- Sample placeholder YouTube embed: replace with real live URL -->
+          <iframe src="https://www.youtube.com/embed/5qap5aO4i9A" allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+        </div>
+        <div class="live-box"><div style="font-weight:700;margin-bottom:8px">Forest Cam (example)</div>
+          <iframe src="https://www.youtube.com/embed/DLzxrzFCyOs" allowfullscreen></iframe>
+        </div>
+      </div>
+    </section>
+
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox" aria-hidden="true" role="dialog">
+      <button class="close" id="closeLight">✕</button>
+      <div class="stage" role="document">
+        <div class="photo" id="lightPhoto"><img src="" alt=""></div>
+        <div class="info">
+          <h3 id="picTitle">Title</h3>
+          <p id="picDesc" style="color:var(--muted)"></p>
+          <div class="controls" style="margin-top:18px">
+            <button class="btn small" id="prev">&larr; Prev</button>
+            <button class="btn small" id="next">Next &rarr;</button>
+            <button class="btn small" id="play">Play</button>
+            <button class="btn small" id="pause">Pause</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>Images from Unsplash (sample) • Paste your own live stream URLs in Live Mode</footer>
+  </div>
+
+<script>
+  // Sample nature images (Unsplash static URLs). Replace or extend as desired.
+  const IMAGES = [
+    {src:"https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1400&q=80&auto=format&fit=crop", title:"Misty Forest", desc:"Sunrise fog in an ancient forest."},
+    {src:"https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1400&q=80&auto=format&fit=crop", title:"Mountain Lake", desc:"Crystal clear lake reflecting the sky."},
+    {src:"https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1400&q=80&auto=format&fit=crop", title:"Path Through Pines", desc:"A tranquil path through tall pines."},
+    {src:"https://images.unsplash.com/photo-1501785888041-af3ef285b470&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8Zm9yZXN0fGVufDB8fDB8fA%3D%3D&w=1400&q=80&auto=format&fit=crop", title:"Forest Glow", desc:"Light filtering through the branches."},
+    {src:"https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=1400&q=80&auto=format&fit=crop", title:"Coastal Cliffs", desc:"Waves crashing against cliffs at golden hour."},
+    {src:"https://images.unsplash.com/photo-1470770903676-69b98201ea1c?w=1400&q=80&auto=format&fit=crop", title:"Desert Dunes", desc:"Sweeping dunes under a pastel sky."},
+    {src:"https://images.unsplash.com/photo-1445820135712-9c7f6d8d4d6e?w=1400&q=80&auto=format&fit=crop", title:"Waterfall", desc:"A powerful waterfall in the jungle."},
+    {src:"https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1400&q=80&auto=format&fit=crop", title:"Sunset Meadow", desc:"Long grasses glowing at sunset."},
+    {src:"https://images.unsplash.com/photo-1433477155337-9aea4e790195?w=1400&q=80&auto=format&fit=crop", title:"Northern Lights", desc:"Aurora painting the night sky."},
+    {src:"https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=1400&q=80&auto=format&fit=crop", title:"River Bend", desc:"A calm bend of a mountain river."}
+  ];
+
+  const grid = document.getElementById('grid');
+  const lightbox = document.getElementById('lightbox');
+  const lightPhoto = document.getElementById('lightPhoto').querySelector('img');
+  const picTitle = document.getElementById('picTitle');
+  const picDesc = document.getElementById('picDesc');
+  let currentIndex = 0;
+  let slideshowTimer = null;
+
+  function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a; }
+
+  function renderGrid(list){
+    grid.innerHTML = '';
+    list.forEach((it, idx)=>{
+      const card = document.createElement('article');
+      card.className = 'card';
+      card.setAttribute('data-index', idx);
+      card.innerHTML = `
+        <div class="img"><img loading="lazy" src="${it.src}" alt="${it.title}"></div>
+        <div class="meta"><div class="title">${it.title}</div><div class="desc">${it.desc}</div></div>
+      `;
+      card.addEventListener('click', ()=>openLight(idx));
+      grid.appendChild(card);
+    });
+  }
+
+  // initial render
+  renderGrid(IMAGES);
+
+  // lightbox functions
+  function openLight(i){
+    currentIndex = i;
+    updateLight();
+    lightbox.classList.add('open');
+    lightbox.setAttribute('aria-hidden','false');
+  }
+  function closeLight(){ lightbox.classList.remove('open'); lightbox.setAttribute('aria-hidden','true'); stopSlideshow(); }
+  function updateLight(){
+    const it = IMAGES[currentIndex];
+    lightPhoto.src = it.src;
+    lightPhoto.alt = it.title;
+    picTitle.textContent = it.title;
+    picDesc.textContent = it.desc;
+  }
+  document.getElementById('closeLight').addEventListener('click', closeLight);
+  document.getElementById('next').addEventListener('click', ()=>{ currentIndex = (currentIndex+1)%IMAGES.length; updateLight(); });
+  document.getElementById('prev').addEventListener('click', ()=>{ currentIndex = (currentIndex-1+IMAGES.length)%IMAGES.length; updateLight(); });
+
+  // keyboard
+  document.addEventListener('keydown', (e)=>{
+    if(lightbox.classList.contains('open')){
+      if(e.key==='Escape') closeLight();
+      if(e.key==='ArrowRight') { currentIndex=(currentIndex+1)%IMAGES.length; updateLight(); }
+      if(e.key==='ArrowLeft') { currentIndex=(currentIndex-1+IMAGES.length)%IMAGES.length; updateLight(); }
+    }
+  });
+
+  // slideshow
+  document.getElementById('slideshow').addEventListener('click', ()=>{
+    if(slideshowTimer) { stopSlideshow(); document.getElementById('slideshow').textContent='Start Slideshow'; }
+    else { startSlideshow(); document.getElementById('slideshow').textContent='Stop Slideshow'; }
+  });
+  document.getElementById('play').addEventListener('click', startSlideshow);
+  document.getElementById('pause').addEventListener('click', stopSlideshow);
+
+  function startSlideshow(){
+    stopSlideshow();
+    slideshowTimer = setInterval(()=>{ currentIndex=(currentIndex+1)%IMAGES.length; updateLight(); }, 3000);
+    if(!lightbox.classList.contains('open')) openLight(0);
+  }
+  function stopSlideshow(){ if(slideshowTimer){ clearInterval(slideshowTimer); slideshowTimer=null; } }
+
+  // shuffle
+  document.getElementById('shuffle').addEventListener('click', ()=>{
+    shuffle(IMAGES); renderGrid(IMAGES);
+  });
+
+  // Tabs: gallery / live
+  const tabG = document.getElementById('tabGallery'), tabL = document.getElementById('tabLive');
+  const galleryArea = document.getElementById('galleryArea'), liveArea = document.getElementById('liveArea');
+  tabG.addEventListener('click', ()=>{ tabG.classList.add('active'); tabL.classList.remove('active'); galleryArea.style.display='block'; liveArea.classList.remove('open'); liveArea.setAttribute('aria-hidden','true'); });
+  tabL.addEventListener('click', ()=>{ tabL.classList.add('active'); tabG.classList.remove('active'); galleryArea.style.display='none'; liveArea.classList.add('open'); liveArea.setAttribute('aria-hidden','false'); });
+
+  // Live mode: add iframe boxes
+  const addLive = document.getElementById('addLive'), liveGrid = document.getElementById('liveGrid'), liveUrl = document.getElementById('liveUrl');
+
+  addLive.addEventListener('click', ()=>{
+    const url = (liveUrl.value||'').trim();
+    if(!url){ alert('Paste a live stream iframe URL (YouTube embed or webcam iframe).'); return; }
+    // basic safety: allow only if contains "http"
+    if(!/^https?:\/\//i.test(url)){ alert('Please paste a full https:// or http:// URL or iframe embed src.'); return; }
+    const box = document.createElement('div'); box.className='live-box';
+    const title = document.createElement('div'); title.style.fontWeight=700; title.style.marginBottom='8px'; title.textContent='Custom Stream';
+    box.appendChild(title);
+    const frame = document.createElement('iframe'); frame.src = url; frame.setAttribute('allow','accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture'); frame.allowFullscreen=true;
+    box.appendChild(frame);
+    liveGrid.prepend(box);
+    liveUrl.value='';
+  });
+
+  // accessibility: close lightbox on outside click
+  lightbox.addEventListener('click', (e)=>{ if(e.target === lightbox) closeLight(); });
+
+  // small optimization: lazy load images by setting src on intersection
+  const imgs = document.querySelectorAll('.card img');
+  const io = new IntersectionObserver((entries)=> {
+    entries.forEach(en => {
+      if(en.isIntersecting){
+        const img = en.target;
+        const src = img.getAttribute('src');
+        // already loaded
+        img.src = src;
+        io.unobserve(img);
+      }
+    });
+  }, {rootMargin: '200px'});
+  document.querySelectorAll('.card img').forEach(i => io.observe(i));
+</script>
+</body>
+</html>
+
