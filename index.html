@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AutoGallery — Beautiful Cars Showcase</title>
+  <meta name="description" content="A beautiful responsive gallery of cars with search, filter and detail modal.">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#0f1724;
+      --card:#0b1220;
+      --muted:#99a0b3;
+      --accent:#06b6d4;
+      --glass: rgba(255,255,255,0.04);
+      --glass-2: rgba(255,255,255,0.02);
+      --card-radius:18px;
+      --gap:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+      background: linear-gradient(180deg,#07101a 0%, #071424 55%, #06101a 100%);
+      color:#e6eef8;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding:32px;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+    }
+
+    /* Container */
+    .wrap{
+      width:min(1200px, 96%);
+    }
+
+    header{
+      display:flex;
+      gap:16px;
+      align-items:center;
+      margin-bottom:22px;
+    }
+    .logo{
+      width:64px;height:64px;border-radius:14px;
+      background:linear-gradient(135deg,#0ea5a4,#06b6d4);
+      display:flex;align-items:center;justify-content:center;
+      font-weight:800;color:#012;letter-spacing:0.6px;
+      box-shadow:0 6px 30px rgba(6,182,212,0.12), inset 0 -6px 24px rgba(255,255,255,0.06);
+      flex-shrink:0;
+    }
+    .title h1{margin:0;font-size:20px;}
+    .title p{margin:0;color:var(--muted);font-size:13px;margin-top:4px}
+
+    /* Controls */
+    .controls{
+      margin-top:18px;
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+      background:var(--glass-2);
+      padding:12px;
+      border-radius:12px;
+      box-shadow: 0 6px 18px rgba(2,6,23,0.6);
+    }
+    .search{
+      flex:1; min-width:200px;
+      display:flex; gap:8px; align-items:center;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:12px; padding:8px 12px;
+    }
+    .search input{
+      background:transparent; border:0; outline:0; color:inherit; font-size:15px; width:100%;
+    }
+    .select, .btn{
+      background:var(--card);
+      border-radius:10px;
+      padding:8px 12px;
+      color:var(--muted);
+      border:1px solid rgba(255,255,255,0.03);
+      font-size:14px;
+    }
+    .btn{
+      background:linear-gradient(90deg,var(--accent),#7dd3fc33);
+      color:#012; font-weight:700; cursor:pointer; border:0;
+      transition:transform .14s ease, box-shadow .14s ease;
+      box-shadow: 0 8px 30px rgba(6,182,212,0.08);
+    }
+    .btn:hover{transform:translateY(-3px); box-shadow: 0 18px 50px rgba(6,182,212,0.12);}
+
+    /* Grid */
+    .grid{
+      margin-top:20px;
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px,1fr));
+      gap:var(--gap);
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius: var(--card-radius);
+      padding:14px;
+      position:relative;
+      overflow:hidden;
+      border: 1px solid rgba(255,255,255,0.03);
+      transition: transform .18s ease, box-shadow .18s ease;
+      min-height:360px;
+      display:flex;flex-direction:column;
+    }
+    .card:hover{ transform: translateY(-8px); box-shadow: 0 24px 60px rgba(2,8,23,0.6); }
+
+    .card .photo{
+      flex:0 0 170px;
+      border-radius:12px;
+      overflow:hidden;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      display:flex;align-items:center;justify-content:center;
+      box-shadow: inset 0 -20px 50px rgba(0,0,0,0.25);
+      margin-bottom:12px;
+    }
+    .card img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+    .badge{
+      position:absolute; top:14px; left:14px;
+      background:linear-gradient(90deg,#f97316,#fb7185);
+      color:#051122; font-weight:700; font-size:12px;
+      padding:6px 10px; border-radius:10px;
+      box-shadow: 0 8px 30px rgba(255,124,90,0.08);
+    }
+
+    .meta{display:flex; gap:10px; align-items:center; justify-content:space-between; margin-top:auto}
+    .meta .left{display:flex; gap:10px; flex-direction:column}
+    .name{font-weight:700; font-size:16px; letter-spacing:0.2px}
+    .specs{color:var(--muted); font-size:13px;}
+    .price{font-weight:800; color:var(--accent); font-size:18px}
+
+    .actions{display:flex; gap:8px; margin-top:12px}
+    .ghost{
+      background:transparent; border:1px solid rgba(255,255,255,0.06);
+      color:var(--muted); padding:8px 12px; border-radius:10px; cursor:pointer;
+    }
+
+    /* Modal */
+    .modal{
+      position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+      background:rgba(2,8,23,0.6); z-index:60; padding:28px;
+    }
+    .modal.open{ display:flex; }
+    .sheet{
+      width:min(920px,96%); background:linear-gradient(180deg,#041020,#061424);
+      border-radius:16px; padding:18px; color: #eaf6ff;
+      box-shadow:0 40px 120px rgba(2,6,23,0.8);
+      display:grid; grid-template-columns: 1fr 360px; gap:18px;
+    }
+    .sheet .big-photo{ border-radius:12px; overflow:hidden; min-height:320px }
+    .sheet .big-photo img{ width:100%; height:100%; object-fit:cover }
+    .sheet .info h3{ margin:0 0 8px 0; font-size:22px }
+    .close-x{ position:absolute; top:18px; right:22px; background:transparent; border:0; color:var(--muted); font-size:20px; cursor:pointer; }
+
+    footer{ margin-top:28px; color:var(--muted); font-size:13px; text-align:center }
+
+    /* Tiny helpers */
+    .pill{ font-size:12px; color:var(--muted); background:var(--glass); padding:6px 8px; border-radius:10px; }
+    @media (max-width:900px){
+      .sheet{ grid-template-columns: 1fr; }
+      .card{ min-height:380px }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap" role="main">
+    <header>
+      <div class="logo" aria-hidden="true">AG</div>
+      <div class="title">
+        <h1>AutoGallery</h1>
+        <p>Handpicked cars • responsive demo • click a card for details</p>
+      </div>
+    </header>
+
+    <div class="controls" role="region" aria-label="Filters">
+      <div class="search" aria-hidden="false">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path stroke="#9fb6c6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35"/><circle cx="11" cy="11" r="6" stroke="#9fb6c6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <input id="q" type="search" placeholder="Search by model, brand or year..." aria-label="Search cars"/>
+      </div>
+
+      <select id="filter" class="select" aria-label="Filter by type">
+        <option value="all">All types</option>
+        <option value="sedan">Sedan</option>
+        <option value="suv">SUV</option>
+        <option value="ev">Electric</option>
+        <option value="coupe">Coupe</option>
+      </select>
+
+      <select id="sort" class="select" aria-label="Sort cars">
+        <option value="new">Newest</option>
+        <option value="price-low">Price: Low → High</option>
+        <option value="price-high">Price: High → Low</option>
+      </select>
+
+      <button id="clear" class="ghost" title="Clear filters">Clear</button>
+      <button id="add" class="btn" aria-haspopup="dialog">Add Car</button>
+    </div>
+
+    <section id="gallery" class="grid" aria-live="polite"></section>
+
+    <footer>
+      Built with ❤️ • Responsive demo • Images: Unsplash / placeholders
+    </footer>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="modal" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="sheet" role="document">
+      <button class="close-x" aria-label="Close modal" id="closeModal">✕</button>
+      <div>
+        <div class="big-photo" id="modalPhoto"></div>
+        <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap">
+          <div class="pill" id="modalType"></div>
+          <div class="pill" id="modalYear"></div>
+          <div class="pill" id="modalRange"></div>
+        </div>
+      </div>
+      <div class="info">
+        <h3 id="modalTitle">Car Title</h3>
+        <p id="modalDesc" style="color:var(--muted); margin-top:8px; line-height:1.4">Description</p>
+
+        <div style="margin-top:16px; display:flex; gap:10px; align-items:center">
+          <div class="price" id="modalPrice">₹ 0</div>
+          <div style="color:var(--muted); font-size:13px">• 0 owners • 0 km</div>
+        </div>
+
+        <div style="margin-top:18px">
+          <button id="contact" class="btn">Contact Dealer</button>
+          <button id="book" class="ghost">Schedule Test Drive</button>
+        </div>
+
+        <dl style="margin-top:18px; color:var(--muted); display:grid; grid-template-columns:1fr 1fr; gap:8px">
+          <div><strong>Engine</strong><div id="modalEngine">—</div></div>
+          <div><strong>Transmission</strong><div id="modalTrans">—</div></div>
+          <div><strong>Seats</strong><div id="modalSeats">—</div></div>
+          <div><strong>Color</strong><div id="modalColor">—</div></div>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // sample car data
+    const CARS = [
+      {
+        id:1, brand:"Aurelia", model:"Aurelia V1", type:"sedan", year:2024,
+        price: 3299000, img:"https://images.unsplash.com/photo-1549924231-f129b911e442?w=1200&q=60&auto=format&fit=crop",
+        desc:"Sleek executive sedan with refined ride quality and modern safety features.",
+        engine:"2.0L Turbo", trans:"8-speed AT", seats:5, color:"Midnight Blue", range:"N/A"
+      },
+      {
+        id:2, brand:"Voltix", model:"Voltix E-Sport", type:"ev", year:2025,
+        price: 4299000, img:"https://images.unsplash.com/photo-1616627562396-7c0b9d025f3a?w=1200&q=60&auto=format&fit=crop",
+        desc:"Pure-electric performance car with instant torque and 420 km range.",
+        engine:"Electric 230 kW", trans:"Single-speed", seats:4, color:"Pearl White", range:"420 km"
+      },
+      {
+        id:3, brand:"Atlas", model:"Atlas X", type:"suv", year:2023,
+        price: 2895000, img:"https://images.unsplash.com/photo-1542365887-1e5a9d3fb5d1?w=1200&q=60&auto=format&fit=crop",
+        desc:"Robust SUV with off-road capability and roomy third-row seating.",
+        engine:"3.0L V6", trans:"9-speed AT", seats:7, color:"Desert Sand", range:"N/A"
+      },
+      {
+        id:4, brand:"Stella", model:"Stella Coupe", type:"coupe", year:2022,
+        price: 1899000, img:"https://images.unsplash.com/photo-1549921296-3c9b9a6f7b6b?w=1200&q=60&auto=format&fit=crop",
+        desc:"Compact coupe focused on driving fun and nimble handling.",
+        engine:"1.6L Turbo", trans:"6-speed MT", seats:4, color:"Crimson", range:"N/A"
+      },
+      {
+        id:5, brand:"Pioneer", model:"Pioneer LX", type:"suv", year:2025,
+        price: 3599000, img:"https://images.unsplash.com/photo-1617549671234-e3e3d6b8b5e5?w=1200&q=60&auto=format&fit=crop",
+        desc:"Luxury SUV with premium interior and advanced driver assist.",
+        engine:"2.5L Hybrid", trans:"CVT", seats:5, color:"Graphite", range:"—"
+      },
+      {
+        id:6, brand:"Eos", model:"Eos R", type:"ev", year:2024,
+        price: 2499000, img:"https://images.unsplash.com/photo-1591386724696-9b3b21c1d3d9?w=1200&q=60&auto=format&fit=crop",
+        desc:"Family EV with practical range and fast-charging support.",
+        engine:"Electric 150 kW", trans:"Single-speed", seats:5, color:"Seafoam", range:"310 km"
+      }
+    ];
+
+    // utilities
+    const fmt = n => n.toLocaleString('en-IN');
+
+    // render cards
+    const gallery = document.getElementById('gallery');
+    const q = document.getElementById('q');
+    const filter = document.getElementById('filter');
+    const sort = document.getElementById('sort');
+    const clear = document.getElementById('clear');
+    const add = document.getElementById('add');
+
+    function renderList(list){
+      gallery.innerHTML = '';
+      if(!list.length){
+        gallery.innerHTML = '<div style="grid-column:1/-1; color:var(--muted); text-align:center; padding:40px; background:var(--glass); border-radius:12px">No cars matched your search.</div>';
+        return;
+      }
+      list.forEach(car=>{
+        const el = document.createElement('article');
+        el.className = 'card';
+        el.setAttribute('data-id', car.id);
+        el.innerHTML = `
+          <div class="badge">${car.type.toUpperCase()}</div>
+          <div class="photo" aria-hidden="true">
+            <img loading="lazy" src="${car.img}" alt="${car.brand} ${car.model}">
+          </div>
+          <div style="display:flex;flex-direction:column; gap:8px">
+            <div>
+              <div class="name">${car.brand} · ${car.model}</div>
+              <div class="specs">${car.year} • ${car.trans} • ${car.seats} seats</div>
+            </div>
+            <div class="meta">
+              <div class="left">
+                <div class="price">₹ ${fmt(car.price)}</div>
+                <div style="color:var(--muted); font-size:13px">${car.color}</div>
+              </div>
+              <div style="text-align:right">
+                <div style="color:var(--muted); font-size:13px">Range</div>
+                <div style="font-weight:700">${car.range ?? '—'}</div>
+              </div>
+            </div>
+
+            <div class="actions" aria-hidden="true">
+              <button class="ghost" data-action="details">Details</button>
+              <button class="btn" data-action="inquire">Inquire</button>
+            </div>
+          </div>
+        `;
+        gallery.appendChild(el);
+      });
+    }
+
+    // initial
+    let state = [...CARS];
+    function applyFilters(){
+      const qv = q.value.trim().toLowerCase();
+      const f = filter.value;
+      const s = sort.value;
+
+      let out = CARS.filter(c=>{
+        if(f !== 'all' && c.type !== f) return false;
+        if(!qv) return true;
+        return (c.brand + ' ' + c.model + ' ' + c.year).toLowerCase().includes(qv);
+      });
+
+      if(s === 'price-low'){
+        out.sort((a,b)=>a.price - b.price);
+      } else if(s === 'price-high'){
+        out.sort((a,b)=>b.price - a.price);
+      } else {
+        out.sort((a,b)=>b.year - a.year);
+      }
+      state = out;
+      renderList(state);
+    }
+    applyFilters();
+
+    // events
+    q.addEventListener('input', applyFilters);
+    filter.addEventListener('change', applyFilters);
+    sort.addEventListener('change', applyFilters);
+    clear.addEventListener('click', ()=>{
+      q.value=''; filter.value='all'; sort.value='new'; applyFilters();
+    });
+
+    // delegated clicks
+    gallery.addEventListener('click', (ev)=>{
+      const btn = ev.target.closest('button');
+      if(!btn) return;
+      const card = ev.target.closest('.card');
+      const id = card && card.dataset.id && Number(card.dataset.id);
+      const car = CARS.find(x=>x.id===id);
+      if(!car) return;
+      const action = btn.dataset.action;
+      if(action === 'details') openModal(car);
+      if(action === 'inquire') alert('Contacting dealer for: ' + car.brand + ' ' + car.model);
+    });
+
+    // modal logic
+    const modal = document.getElementById('modal');
+    const closeModal = document.getElementById('closeModal');
+    function openModal(car){
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden','false');
+      document.getElementById('modalPhoto').innerHTML = `<img src="${car.img}" alt="${car.brand} ${car.model}">`;
+      document.getElementById('modalTitle').textContent = `${car.brand} ${car.model}`;
+      document.getElementById('modalDesc').textContent = car.desc;
+      document.getElementById('modalPrice').textContent = `₹ ${fmt(car.price)}`;
+      document.getElementById('modalEngine').textContent = car.engine;
+      document.getElementById('modalTrans').textContent = car.trans;
+      document.getElementById('modalSeats').textContent = car.seats;
+      document.getElementById('modalColor').textContent = car.color;
+      document.getElementById('modalType').textContent = car.type.toUpperCase();
+      document.getElementById('modalYear').textContent = car.year;
+      document.getElementById('modalRange').textContent = car.range ?? '—';
+      document.getElementById('contact').onclick = ()=> alert('Email dealer about ' + car.brand + ' ' + car.model);
+      document.getElementById('book').onclick = ()=> alert('Booking: ' + car.brand + ' ' + car.model);
+      // trap focus
+      setTimeout(()=>document.getElementById('contact').focus(), 120);
+    }
+    function hideModal(){
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden','true');
+    }
+    closeModal.addEventListener('click', hideModal);
+    modal.addEventListener('click', (e)=>{ if(e.target === modal) hideModal(); });
+    document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') hideModal(); });
+
+    // add car (demo)
+    add.addEventListener('click', ()=>{
+      const next = {
+        id: Date.now(),
+        brand: "Nova",
+        model: "Nova GT",
+        type: "coupe",
+        year: 2025,
+        price: 1999000,
+        img: "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?w=1200&q=60&auto=format&fit=crop",
+        desc:"New demo car added by user.",
+        engine: "2.2L Turbo", trans: "6-speed AT", seats:4, color:"Matte Black", range:"N/A"
+      };
+      CARS.unshift(next);
+      applyFilters();
+      openModal(next);
+    });
+
+    // small accessibility touch - keyboard navigation
+    gallery.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter'){
+        const card = e.target.closest('.card');
+        if(card) openModal(CARS.find(c=>c.id==card.dataset.id));
+      }
+    });
+  </script>
+</body>
+</html>
+
